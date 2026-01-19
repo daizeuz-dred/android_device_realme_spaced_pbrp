@@ -28,35 +28,47 @@ jobs:
        - name: Set Build Environment
          run: |
            echo "MANIFEST=https://github.com/PitchBlackRecoveryProject/manifest_pb -b ${GITHUB_REF##*/}" >> $GITHUB_ENV
-           # Setting up variables normally handled by the PBRP Compiler
+           # Ensure Build Path is an absolute path
            echo "BUILD_PATH=$GITHUB_WORKSPACE/pbrp" >> $GITHUB_ENV
 
-       - name: Install Dependencies
+       - name: Install Dependencies and Repo Tool
          run: |
            sudo apt-get update
            sudo apt-get install -y bc build-essential zip curl libstdc++6 git wget python3 sshpass
+           # Install the 'repo' tool
+           mkdir -p ~/bin
+           curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+           chmod a+x ~/bin/repo
+           # Add ~/bin to the system path for the rest of the workflow
+           echo "$HOME/bin" >> $GITHUB_PATH
 
        - name: Sync PBRP Source
          run: |
            mkdir -p $BUILD_PATH
            cd $BUILD_PATH
+           # Configure Git (Required for 'repo' to work)
            git config --global user.email "bot@pbrp.co"
            git config --global user.name "PBRP Bot"
-           # This uses the public manifest instead of the private compiler
-           repo init -u $MANIFEST --depth=1
-           repo sync -j$(nproc --all) --force-sync --no-tags --no-clone-bundle
+           git config --global color.ui false
+           
+           # Initialize and Sync
+           ~/bin/repo init -u $MANIFEST --depth=1
+           ~/bin/repo sync -j$(nproc --all) --force-sync --no-tags --no-clone-bundle
 
        - name: Build Recovery
          run: |
            cd $BUILD_PATH
-           . build/envsetup.sh
-           # You may need to change 'pbrp' to your specific lunch target
+           # Setup environment
+           source build/envsetup.sh
+           
+           # Replace 'codename' with your actual device codename if needed
+           # For example: lunch omni_spaced-eng
            lunch pbrp_${{ github.event.repository.name }}-eng || lunch omni_${{ github.event.repository.name }}-eng
+           
            mka recoveryimage
 
        - name: Release Builds 
          run: |
            cd $BUILD_PATH
-           # If you have your own deploy script, run it here. 
-           # Since we bypassed the PBRP vendor tools, we run a simple upload or list check.
-           ls -lh out/target/product/*/PitchBlack*.zip || echo "Build failed or output not found"
+           echo "Checking for output files..."
+           find out/target/product/ -name "PitchBlack*.zip" -exec ls -lh {} + || echo "No build found."
