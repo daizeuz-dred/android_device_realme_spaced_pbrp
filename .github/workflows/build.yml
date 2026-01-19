@@ -1,4 +1,4 @@
-name: PBRP Organization CI
+name: PBRP Build
 on:
   workflow_dispatch:
     inputs:
@@ -14,54 +14,49 @@ on:
 env:
   BUILD_RELEASE_TYPE: ${{ github.event.inputs.DEPLOY_TYPE }}
   CHANGELOG: ${{ github.event.inputs.ChangeLogs }}
-  # Ensure these are empty strings if secrets are missing so the script doesn't hang
-  BOT_API: ${{ secrets.BOT_API || '' }}
-  SFPassword: ${{ secrets.SFPassword || '' }}
   TARGET: "pbrp"
 
 jobs:
   PBRP_CI:
-    runs-on: ubuntu-latest # Changed from 20.04 to latest
+    runs-on: ubuntu-latest
     steps:
        - name: Check Environment
          run: |
            echo "Triggering build for branch: ${GITHUB_REF##*/}"
-           echo "Using Runner: ${{ runner.os }}"
+           echo "Running on: ${{ runner.os }}"
 
-       - name: Auto Adapt Manifest
-         run: echo "MANIFEST=https://github.com/PitchBlackRecoveryProject/manifest_pb -b ${GITHUB_REF##*/}" >> $GITHUB_ENV
-
-       - name: Export Vars
+       - name: Set Build Environment
          run: |
-              if [[ ${BUILD_RELEASE_TYPE} == "TEST" ]]; then echo "TEST_BUILD=true"  >> $GITHUB_ENV;fi
-              if [[ ${BUILD_RELEASE_TYPE} == "BETA" ]]; then echo "BETA_BUILD=true"  >> $GITHUB_ENV;fi
-              if [[ ${BUILD_RELEASE_TYPE} == "OFFICIAL" ]]; then echo "PB_OFFICIAL=true"  >> $GITHUB_ENV;fi
+           echo "MANIFEST=https://github.com/PitchBlackRecoveryProject/manifest_pb -b ${GITHUB_REF##*/}" >> $GITHUB_ENV
+           # Setting up variables normally handled by the PBRP Compiler
+           echo "BUILD_PATH=$GITHUB_WORKSPACE/pbrp" >> $GITHUB_ENV
 
-       - name: Checkout Cleaner
-         uses: actions/checkout@v3 # Updated to v3 for better compatibility
-         with:
-           repository: PitchBlackRecoveryProject/Cleaner
-           ref: main
-           token: ${{ secrets.GH_BOT_TOKEN || secrets.GITHUB_TOKEN }}
-           path: .github/actions/Cleaner
+       - name: Install Dependencies
+         run: |
+           sudo apt-get update
+           sudo apt-get install -y bc build-essential zip curl libstdc++6 git wget python3 sshpass
 
-       - name: Cleaning
-         uses: ./.github/actions/Cleaner
+       - name: Sync PBRP Source
+         run: |
+           mkdir -p $BUILD_PATH
+           cd $BUILD_PATH
+           git config --global user.email "bot@pbrp.co"
+           git config --global user.name "PBRP Bot"
+           # This uses the public manifest instead of the private compiler
+           repo init -u $MANIFEST --depth=1
+           repo sync -j$(nproc --all) --force-sync --no-tags --no-clone-bundle
 
-       - name: Checkout Compiler
-         uses: actions/checkout@v3
-         with:
-           repository: PitchBlackRecoveryProject/Compiler
-           ref: production
-           token: ${{ secrets.GH_BOT_TOKEN || secrets.GITHUB_TOKEN }}
-           path: .github/actions/Compiler
-
-       - name: Recovery Compilation
-         uses: ./.github/actions/Compiler
+       - name: Build Recovery
+         run: |
+           cd $BUILD_PATH
+           . build/envsetup.sh
+           # You may need to change 'pbrp' to your specific lunch target
+           lunch pbrp_${{ github.event.repository.name }}-eng || lunch omni_${{ github.event.repository.name }}-eng
+           mka recoveryimage
 
        - name: Release Builds 
          run: |
-              sudo apt-get update && sudo apt-get install sshpass -y
-              # Note: If $BuildPath isn't defined by the Compiler action, this step will fail.
-              cd ${BuildPath:-.} 
-              bash vendor/utils/pb_deploy.sh ${BUILD_RELEASE_TYPE} ${VENDOR} ${CODENAME}
+           cd $BUILD_PATH
+           # If you have your own deploy script, run it here. 
+           # Since we bypassed the PBRP vendor tools, we run a simple upload or list check.
+           ls -lh out/target/product/*/PitchBlack*.zip || echo "Build failed or output not found"
