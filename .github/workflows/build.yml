@@ -27,10 +27,12 @@ jobs:
 
        - name: Set Build Environment
          run: |
-           echo "MANIFEST=https://github.com/PitchBlackRecoveryProject/manifest_pb -b ${GITHUB_REF##*/}" >> $GITHUB_ENV
-           # Ensure Build Path is an absolute path
+           # If your branch is 'main', PBRP manifest won't find it. 
+           # We'll default to 'android-12.1' which is the PBRP stable branch.
+           echo "MANIFEST=https://github.com/PitchBlackRecoveryProject/manifest_pb" >> $GITHUB_ENV
+           echo "MANIFEST_BRANCH=android-12.1" >> $GITHUB_ENV
            echo "BUILD_PATH=$GITHUB_WORKSPACE/pbrp" >> $GITHUB_ENV
-
+           
        - name: Install Dependencies and Repo Tool
          run: |
            sudo apt-get update
@@ -46,15 +48,13 @@ jobs:
          run: |
            mkdir -p $BUILD_PATH
            cd $BUILD_PATH
-           # Configure Git (Required for 'repo' to work)
            git config --global user.email "bot@pbrp.co"
            git config --global user.name "PBRP Bot"
-           git config --global color.ui false
            
-           # Initialize and Sync
-           ~/bin/repo init -u $MANIFEST --depth=1
+           # Initialize with the correct branch (-b)
+           ~/bin/repo init -u $MANIFEST -b $MANIFEST_BRANCH --depth=1
            ~/bin/repo sync -j$(nproc --all) --force-sync --no-tags --no-clone-bundle
-
+           
        - name: Build Recovery
          run: |
            cd $BUILD_PATH
