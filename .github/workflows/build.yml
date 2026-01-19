@@ -20,6 +20,15 @@ jobs:
   PBRP_CI:
     runs-on: ubuntu-latest
     steps:
+       - name: Free Disk Space
+         run: |
+           sudo docker image prune -a -f
+           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+           sudo rm -rf "/usr/local/share/boost"
+           sudo rm -rf /etc/apt/sources.list.d/*
+           sudo apt-get clean
+           df -h # Shows how much space we cleared
+       
        - name: Check Environment
          run: |
            echo "Triggering build for branch: ${GITHUB_REF##*/}"
@@ -37,23 +46,20 @@ jobs:
          run: |
            sudo apt-get update
            sudo apt-get install -y bc build-essential zip curl libstdc++6 git wget python3 sshpass
-           # Install the 'repo' tool
            mkdir -p ~/bin
            curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
            chmod a+x ~/bin/repo
-           # Add ~/bin to the system path for the rest of the workflow
            echo "$HOME/bin" >> $GITHUB_PATH
-
-       - name: Sync PBRP Source
+           
+       - name: Sync PBRP Source (Shallow)
          run: |
-           mkdir -p $BUILD_PATH
-           cd $BUILD_PATH
+           mkdir -p pbrp
+           cd pbrp
            git config --global user.email "bot@pbrp.co"
            git config --global user.name "PBRP Bot"
-           
-           # Initialize with the correct branch (-b)
-           ~/bin/repo init -u $MANIFEST -b $MANIFEST_BRANCH --depth=1
-           ~/bin/repo sync -j$(nproc --all) --force-sync --no-tags --no-clone-bundle
+           # We use --depth=1 and --groups=all,-notdefault,-device,-partner to keep it small
+           ~/bin/repo init -u https://github.com/PitchBlackRecoveryProject/manifest_pb -b android-12.1 --depth=1
+           ~/bin/repo sync -c -j$(nproc --all) --force-sync --no-tags --no-clone-bundle
            
        - name: Build Recovery
          run: |
