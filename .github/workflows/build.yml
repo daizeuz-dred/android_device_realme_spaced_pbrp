@@ -14,21 +14,20 @@ on:
 env:
   BUILD_RELEASE_TYPE: ${{ github.event.inputs.DEPLOY_TYPE }}
   CHANGELOG: ${{ github.event.inputs.ChangeLogs }}
-  BOT_API: ${{ secrets.BOT_API }}
-  GCF_AUTH_KEY: ${{ secrets.GCF_AUTH_KEY }}
-  GH_BOT_TOKEN: ${{ secrets.GH_BOT_TOKEN }}
-  GitHubMail: ${{ secrets.GitHubMail }}
-  GitHubName: ${{ secrets.GitHubName }}
-  SFPassword: ${{ secrets.SFPassword }}
-  SFUserName: ${{ secrets.SFUserName }}
+  # Ensure these are empty strings if secrets are missing so the script doesn't hang
+  BOT_API: ${{ secrets.BOT_API || '' }}
+  SFPassword: ${{ secrets.SFPassword || '' }}
   TARGET: "pbrp"
 
 jobs:
   PBRP_CI:
-    # Removed the skip-ci check to force the job to start
-    runs-on: ubuntu-20.04
-
+    runs-on: ubuntu-latest # Changed from 20.04 to latest
     steps:
+       - name: Check Environment
+         run: |
+           echo "Triggering build for branch: ${GITHUB_REF##*/}"
+           echo "Using Runner: ${{ runner.os }}"
+
        - name: Auto Adapt Manifest
          run: echo "MANIFEST=https://github.com/PitchBlackRecoveryProject/manifest_pb -b ${GITHUB_REF##*/}" >> $GITHUB_ENV
 
@@ -38,20 +37,19 @@ jobs:
               if [[ ${BUILD_RELEASE_TYPE} == "BETA" ]]; then echo "BETA_BUILD=true"  >> $GITHUB_ENV;fi
               if [[ ${BUILD_RELEASE_TYPE} == "OFFICIAL" ]]; then echo "PB_OFFICIAL=true"  >> $GITHUB_ENV;fi
 
-       - name: Checkout Cleaning Up Runner Repo
-         uses: actions/checkout@v2
+       - name: Checkout Cleaner
+         uses: actions/checkout@v3 # Updated to v3 for better compatibility
          with:
            repository: PitchBlackRecoveryProject/Cleaner
            ref: main
-           # Use standard token if GH_BOT_TOKEN is missing (may fail if repo is private)
            token: ${{ secrets.GH_BOT_TOKEN || secrets.GITHUB_TOKEN }}
            path: .github/actions/Cleaner
 
        - name: Cleaning
          uses: ./.github/actions/Cleaner
 
-       - name: Checkout Recovery Compiler Repo
-         uses: actions/checkout@v2
+       - name: Checkout Compiler
+         uses: actions/checkout@v3
          with:
            repository: PitchBlackRecoveryProject/Compiler
            ref: production
@@ -64,5 +62,6 @@ jobs:
        - name: Release Builds 
          run: |
               sudo apt-get update && sudo apt-get install sshpass -y
-              cd $BuildPath 
+              # Note: If $BuildPath isn't defined by the Compiler action, this step will fail.
+              cd ${BuildPath:-.} 
               bash vendor/utils/pb_deploy.sh ${BUILD_RELEASE_TYPE} ${VENDOR} ${CODENAME}
