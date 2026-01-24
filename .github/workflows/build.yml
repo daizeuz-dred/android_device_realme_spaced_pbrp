@@ -60,7 +60,7 @@ jobs:
        - name: Clone Device Tree
          run: |
            cd pbrp
-           git clone https://github.com/${{ github.repository }} -b main ${{ env.DEVICE_PATH }}
+           git clone https://github.com/${{ github.repository }} -b android-12.1 ${{ env.DEVICE_PATH }}
        - name: Build Recovery
          run: |
            cd pbrp
