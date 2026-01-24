@@ -69,7 +69,7 @@ jobs:
            source build/envsetup.sh
            
            # We lunch first so the build system populates variables
-           lunch pbrp_${{ env.DEVICE_CODENAME }}-eng || lunch omni_${{ env.DEVICE_CODENAME }}-eng
+           lunch omni_${{ env.DEVICE_CODENAME }}-eng
            
            # CRITICAL: Now that lunch is done, delete .repo to free up another ~15-20GB
            rm -rf .repo
