@@ -30,7 +30,7 @@ jobs:
 
       # THIS IS THE FIX FOR THE PYTHON ERROR
       - name: Set up Python 2.7
-        uses: actions/setup-python@v5
+        uses: LizardByte/setup-python-action@master
         with:
           python-version: '2.7'
 
@@ -39,7 +39,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y bc build-essential zip curl libstdc++6 git wget python3 sshpass
           
-          # Link the python2 provided by the action to the 'python' command
+          # Force symlinks to the Python 2.7 we just installed
           sudo ln -sf $(which python2.7) /usr/bin/python
           sudo ln -sf $(which python2.7) /usr/bin/python2
           
