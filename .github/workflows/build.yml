@@ -38,12 +38,17 @@ jobs:
 
        - name: Install Dependencies and Repo Tool
          run: |
-           sudo apt-get update
-           sudo apt-get install -y bc build-essential zip curl libstdc++6 git wget python3 sshpass
-           mkdir -p ~/bin
-           curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
-           chmod a+x ~/bin/repo
-           echo "$HOME/bin" >> $GITHUB_PATH
+          sudo apt-get update
+          # Added python2 and python2-minimal
+          sudo apt-get install -y bc build-essential zip curl libstdc++6 git wget python3 python2 python2-minimal sshpass
+          
+          # Fix: Create a symlink so scripts calling 'python' use python2
+          sudo ln -sf /usr/bin/python2 /usr/bin/python
+          
+          mkdir -p ~/bin
+          curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+          chmod a+x ~/bin/repo
+          echo "$HOME/bin" >> $GITHUB_PATH
            
        - name: Sync PBRP Source
          run: |
