@@ -53,7 +53,7 @@ jobs:
            git config --global user.name "PBRP Bot"
            
            # Initialize with --depth=1 and --no-clone-bundle for smallest possible footprint
-           ~/bin/repo init -u https://github.com/PitchBlackRecoveryProject/manifest_pb -b android-12.1 --depth=1
+           ~/bin/repo init -u https://github.com/PitchBlackRecoveryProject/manifest_pb -b android-11.0 --depth=1
            
            # Sync only what is absolutely necessary
            ~/bin/repo sync -c -j$(nproc --all) --force-sync --no-tags --no-clone-bundle --optimized-fetch --prune
