@@ -21,69 +21,63 @@ jobs:
   PBRP_CI:
     runs-on: ubuntu-latest
     steps:
-      - name: Maximize Build Space
-        uses: easimon/maximize-build-space@master
-        # ... your existing config ...
+       # 1. THE SPACE FIX: This re-partitions the disk to use all available space for your build.
+       - name: Maximize Build Space
+         uses: easimon/maximize-build-space@master
+         with:
+           root-reserve-mb: 2048
+           temp-reserve-mb: 100
+           remove-dotnet: 'true'
+           remove-android: 'true'
+           remove-haskell: 'true'
+           remove-codeql: 'true'
+           remove-docker-images: 'true'
 
-      - name: Checkout
-        uses: actions/checkout@v4
+       - name: Checkout
+         uses: actions/checkout@v4
 
-      # THIS IS THE FIX FOR THE PYTHON ERROR
-      - name: Set up Python 2.7
-        uses: LizardByte/setup-python-action@master
-        with:
-          python-version: '2.7'
-
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y bc build-essential zip curl libstdc++6 git wget python3 sshpass
-          
-          # Force symlinks to the Python 2.7 we just installed
-          sudo ln -sf $(which python2.7) /usr/bin/python
-          sudo ln -sf $(which python2.7) /usr/bin/python2
-          
-          mkdir -p ~/bin
-          curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
-          chmod a+x ~/bin/repo
-          echo "$HOME/bin" >> $GITHUB_PATH
+       - name: Install Dependencies and Repo Tool
+         run: |
+           sudo apt-get update
+           sudo apt-get install -y bc build-essential zip curl libstdc++6 git wget python3 sshpass
+           mkdir -p ~/bin
+           curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+           chmod a+x ~/bin/repo
+           echo "$HOME/bin" >> $GITHUB_PATH
            
-      - name: Sync PBRP Source
-        run: |
+       - name: Sync PBRP Source
+         run: |
            mkdir -p pbrp
            cd pbrp
            git config --global user.email "bot@pbrp.co"
            git config --global user.name "PBRP Bot"
            
            # Initialize with --depth=1 and --no-clone-bundle for smallest possible footprint
-           ~/bin/repo init -u https://github.com/PitchBlackRecoveryProject/manifest_pb -b android-11.0 --depth=1
+           ~/bin/repo init -u https://github.com/PitchBlackRecoveryProject/manifest_pb -b android-12.1 --depth=1
            
            # Sync only what is absolutely necessary
            ~/bin/repo sync -c -j$(nproc --all) --force-sync --no-tags --no-clone-bundle --optimized-fetch --prune
-
-      - name: Clone Device Tree
-        run: |
+       - name: Clone Device Tree
+         run: |
            cd pbrp
            git clone https://github.com/${{ github.repository }} -b main ${{ env.DEVICE_PATH }}
-
-      - name: Build Recovery
-        run: |
+       - name: Build Recovery
+         run: |
            cd pbrp
            source build/envsetup.sh
            
            # We lunch first so the build system populates variables
-           lunch omni_${{ env.DEVICE_CODENAME }}-eng
+           lunch pbrp_${{ env.DEVICE_CODENAME }}-eng || lunch omni_${{ env.DEVICE_CODENAME }}-eng
            
            # CRITICAL: Now that lunch is done, delete .repo to free up another ~15-20GB
            rm -rf .repo
            
            # Start building
            mka recoveryimage
-
-      - name: Upload Artifact
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
+       - name: Upload Artifact
+         if: success()
+         uses: actions/upload-artifact@v4
+         with:
            name: PBRP-${{ env.DEVICE_CODENAME }}
            path: |
              pbrp/out/target/product/${{ env.DEVICE_CODENAME }}/PitchBlack*.zip
