@@ -154,12 +154,13 @@ TW_H_OFFSET := -115
 TW_FRAMERATE := 60
 
 # Debug
-TWRP_INCLUDE_LOGCAT := true
+TWRPRODUCT_ENFORCE_VINTF_MANIFEST := falseINCLUDE_LOGCAT := true
 TARGET_USES_LOGD := true
 
 # PBRP specific build flags
 PB_DISABLE_DEFAULT_TREBLE_COMP := true
-PB_TORCH_PATH := "/proc/qcom_flash"
+# PB_TORCH_PATH := "/proc/qcom_flash"  <-- REMOVE THIS
+PB_TORCH_PATH := "/sys/class/leds/flashlight/brightness"
 PB_TORCH_MAX_BRIGHTNESS := 1
 
 # Include some binaries
@@ -168,3 +169,13 @@ TW_INCLUDE_RESETPROP := true
 
 # Apex
 TW_EXCLUDE_APEX := true
+
+# Fix Health HAL missing
+RECOVERY_LIBRARY_SOURCE_FILES += \
+    $(TARGET_OUT_SHARED_LIBRARIES)/android.hardware.health@2.1.so \
+    $(TARGET_OUT_SHARED_LIBRARIES)/android.hardware.health@2.0.so \
+    $(TARGET_OUT_SHARED_LIBRARIES)/libhardware.so \
+    $(TARGET_OUT_SHARED_LIBRARIES)/libbattery.so
+
+TW_NO_HAPTICS := true
+PRODUCT_ENFORCE_VINTF_MANIFEST := false
