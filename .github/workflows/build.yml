@@ -37,7 +37,7 @@ jobs:
          uses: actions/checkout@v4
 
        - name: Install Dependencies and Repo Tool
-        run: |
+         run: |
           sudo apt-get update
           # Add Ubuntu 20.04 sources to get Python 2
           echo "deb http://dk.archive.ubuntu.com/ubuntu/ focal main universe" | sudo tee -a /etc/apt/sources.list
