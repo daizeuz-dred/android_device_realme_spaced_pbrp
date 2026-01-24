@@ -179,3 +179,36 @@ RECOVERY_LIBRARY_SOURCE_FILES += \
 
 TW_NO_HAPTICS := true
 PRODUCT_ENFORCE_VINTF_MANIFEST := false
+
+# --- REBOOT AND SYSTEM STABILITY FIXES ---
+
+# 1. Bypass VINTF and Compatibility checks that trigger reboots
+# This prevents the 'servicemanager' and 'health HAL' loops seen in your dmesg
+PRODUCT_ENFORCE_VINTF_MANIFEST := false
+TW_SKIP_COMPATIBILITY_CHECK := true
+
+# 2. Fix libc property error 0xb (Permission Denied)
+# This ensures the recovery process can set system properties without crashing
+BOARD_KERNEL_CMDLINE += androidboot.selinux=permissive
+BUILD_BROKEN_DUP_RULES := true
+
+# 3. Disable the hardware watchdog/reboot triggers
+# Helps prevent the 2-3 minute auto-reboot by masking the Oplus reboot reason
+BOARD_KERNEL_CMDLINE += oplus_reboot_reason=0x0
+BOARD_KERNEL_CMDLINE += androidboot.init_fatal_reboot_target=bootloader
+
+# 4. Storage and Mounting Fixes
+# These address the "F2FS Magic Mismatch" and "Unhandled flags" in your logs
+BOARD_HAS_LARGE_FILESYSTEM := true
+# Ensure we use modern mounting for Android 12+
+TW_INCLUDE_LOGICAL := my_product my_engineering my_company my_carrier my_region my_heytap my_stock my_preload my_manifest
+
+# 5. Fix TEE / Keymaster Thread Failures
+# Your log showed: 'fail to start thread for keymaster'
+# Including these helps the recovery environment handle secure services correctly
+PRODUCT_PACKAGES += \
+    android.hardware.keymaster@4.1-service \
+    android.hardware.gatekeeper@1.0-service \
+    libkeymaster4_1support \
+    libkeystore-engine \
+    libkeystore-attestation-id
