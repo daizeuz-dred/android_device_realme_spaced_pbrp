@@ -19,7 +19,7 @@ env:
 
 jobs:
   PBRP_CI:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
        # 1. THE SPACE FIX: This re-partitions the disk to use all available space for your build.
        - name: Maximize Build Space
