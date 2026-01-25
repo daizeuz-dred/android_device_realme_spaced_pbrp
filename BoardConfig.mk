@@ -187,7 +187,6 @@ PRODUCT_ENFORCE_VINTF_MANIFEST := false
 BOARD_KERNEL_CMDLINE += mtk_wdt.disable_wdt_log=1
 BOARD_KERNEL_CMDLINE += oplus_reboot_reason=0x0
 BOARD_KERNEL_CMDLINE += androidboot.init_fatal_reboot_target=bootloader
-BOARD_KERNEL_CMDLINE += androidboot.force_normal_boot=1
 
 # 2. Fix Permission Denied (Error code 0xb) and Property failures
 BOARD_KERNEL_CMDLINE += androidboot.selinux=permissive
@@ -197,7 +196,7 @@ BUILD_BROKEN_VBMETA_VERSION_CHECK := true
 
 # 3. Graphics & Display Fixes (Addressing obj_id 30/42 errors)
 BOARD_HAS_MTK_GRAPHICS := true
-TARGET_RECOVERY_PIXEL_FORMAT := "RGBX_8888"
+TARGET_RECOVERY_PIXEL_FORMAT := "BGRA_8888"
 BOARD_USES_MTK_DRM_INTERFACE := true
 # Force the display plane if screen is still black
 # TARGET_RECOVERY_OVERSCAN_PERCENT := 1 
