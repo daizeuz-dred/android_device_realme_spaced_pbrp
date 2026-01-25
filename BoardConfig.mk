@@ -203,12 +203,4 @@ BOARD_HAS_LARGE_FILESYSTEM := true
 # Ensure we use modern mounting for Android 12+
 TW_INCLUDE_LOGICAL := my_product my_engineering my_company my_carrier my_region my_heytap my_stock my_preload my_manifest
 
-# 5. Fix TEE / Keymaster Thread Failures
-# Your log showed: 'fail to start thread for keymaster'
-# Including these helps the recovery environment handle secure services correctly
-PRODUCT_PACKAGES += \
-    android.hardware.keymaster@4.1-service \
-    android.hardware.gatekeeper@1.0-service \
-    libkeymaster4_1support \
-    libkeystore-engine \
-    libkeystore-attestation-id
+
