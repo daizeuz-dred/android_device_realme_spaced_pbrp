@@ -154,7 +154,8 @@ TW_H_OFFSET := -115
 TW_FRAMERATE := 60
 
 # Debug
-TWRPRODUCT_ENFORCE_VINTF_MANIFEST := falseINCLUDE_LOGCAT := true
+TWRPRODUCT_ENFORCE_VINTF_MANIFEST := false
+INCLUDE_LOGCAT := true
 TARGET_USES_LOGD := true
 
 # PBRP specific build flags
@@ -182,25 +183,30 @@ PRODUCT_ENFORCE_VINTF_MANIFEST := false
 
 # --- REBOOT AND SYSTEM STABILITY FIXES ---
 
-# 1. Bypass VINTF and Compatibility checks that trigger reboots
-# This prevents the 'servicemanager' and 'health HAL' loops seen in your dmesg
-PRODUCT_ENFORCE_VINTF_MANIFEST := false
-TW_SKIP_COMPATIBILITY_CHECK := true
-
-# 2. Fix libc property error 0xb (Permission Denied)
-# This ensures the recovery process can set system properties without crashing
-BOARD_KERNEL_CMDLINE += androidboot.selinux=permissive
-BUILD_BROKEN_DUP_RULES := true
-
-# 3. Disable the hardware watchdog/reboot triggers
-# Helps prevent the 2-3 minute auto-reboot by masking the Oplus reboot reason
+# 1. Disable Hardware Watchdogs (Prevents 2-minute auto-reboot)
+BOARD_KERNEL_CMDLINE += mtk_wdt.disable_wdt_log=1
 BOARD_KERNEL_CMDLINE += oplus_reboot_reason=0x0
 BOARD_KERNEL_CMDLINE += androidboot.init_fatal_reboot_target=bootloader
+BOARD_KERNEL_CMDLINE += androidboot.force_normal_boot=1
 
-# 4. Storage and Mounting Fixes
-# These address the "F2FS Magic Mismatch" and "Unhandled flags" in your logs
+# 2. Fix Permission Denied (Error code 0xb) and Property failures
+BOARD_KERNEL_CMDLINE += androidboot.selinux=permissive
+BUILD_BROKEN_DUP_RULES := true
+BUILD_BROKEN_ELF_PREBUILT_PRODUCT_COPY_FILES := true
+BUILD_BROKEN_VBMETA_VERSION_CHECK := true
+
+# 3. Graphics & Display Fixes (Addressing obj_id 30/42 errors)
+BOARD_HAS_MTK_GRAPHICS := true
+TARGET_RECOVERY_PIXEL_FORMAT := "RGBX_8888"
+BOARD_USES_MTK_DRM_INTERFACE := true
+# Force the display plane if screen is still black
+# TARGET_RECOVERY_OVERSCAN_PERCENT := 1 
+
+# 4. Bypass VINTF and Security Mismatches
+PRODUCT_ENFORCE_VINTF_MANIFEST := false
+TW_SKIP_COMPATIBILITY_CHECK := true
+PB_DISABLE_DEFAULT_TREBLE_COMP := true
+
+# 5. Mounting and Storage
 BOARD_HAS_LARGE_FILESYSTEM := true
-# Ensure we use modern mounting for Android 12+
 TW_INCLUDE_LOGICAL := my_product my_engineering my_company my_carrier my_region my_heytap my_stock my_preload my_manifest
-
-
