@@ -39,3 +39,13 @@ PRODUCT_MANUFACTURER := Realme
 # HACK: Set vendor patch level
 PRODUCT_PROPERTY_OVERRIDES += \
     ro.bootimage.build.date.utc=0
+
+PRODUCT_PACKAGES += \
+    android.hardware.keymaster@4.1-service \
+    android.hardware.gatekeeper@1.0-service \
+    libkeymaster4_1support \
+    libkeystore-engine \
+    libkeystore-attestation-id \
+    android.hardware.health@2.1-service \
+    android.hardware.health@2.1.so \
+    android.hardware.health@2.0.so
