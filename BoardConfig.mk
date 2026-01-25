@@ -117,7 +117,7 @@ TARGET_COPY_OUT_VENDOR := vendor
 BOARD_USES_METADATA_PARTITION := true
 
 # Recovery
-TARGET_RECOVERY_PIXEL_FORMAT := "RGBX_8888"
+TARGET_RECOVERY_PIXEL_FORMAT := "BGRA_8888"
 BOARD_HAS_NO_SELECT_BUTTON := true
 BOARD_HAS_LARGE_FILESYSTEM := true
 TARGET_RECOVERY_FSTAB := $(DEVICE_PATH)/recovery/root/system/etc/recovery.fstab
@@ -183,29 +183,33 @@ PRODUCT_ENFORCE_VINTF_MANIFEST := false
 
 # --- REBOOT AND SYSTEM STABILITY FIXES ---
 
-# 1. Disable Hardware Watchdogs (Prevents 2-minute auto-reboot)
+# 1. Disable Hardware Watchdogs (Force the kernel to stay alive)
+# These flags tell the MediaTek watchdog to ignore "hangs" in security services
 BOARD_KERNEL_CMDLINE += mtk_wdt.disable_wdt_log=1
+BOARD_KERNEL_CMDLINE += panic=0
+BOARD_KERNEL_CMDLINE += lockup_detector=0
 BOARD_KERNEL_CMDLINE += oplus_reboot_reason=0x0
 BOARD_KERNEL_CMDLINE += androidboot.init_fatal_reboot_target=bootloader
 
-# 2. Fix Permission Denied (Error code 0xb) and Property failures
+# 2. Fix Permission Denied (Error code 0xb)
 BOARD_KERNEL_CMDLINE += androidboot.selinux=permissive
 BUILD_BROKEN_DUP_RULES := true
 BUILD_BROKEN_ELF_PREBUILT_PRODUCT_COPY_FILES := true
 BUILD_BROKEN_VBMETA_VERSION_CHECK := true
 
-# 3. Graphics & Display Fixes (Addressing obj_id 30/42 errors)
+# 3. Graphics & Display Fixes (Addressing Distortion and obj_id errors)
+# These flags force the MTK DRM driver to align the screen correctly
 BOARD_HAS_MTK_GRAPHICS := true
 TARGET_RECOVERY_PIXEL_FORMAT := "BGRA_8888"
 BOARD_USES_MTK_DRM_INTERFACE := true
-# Force the display plane if screen is still black
-# TARGET_RECOVERY_OVERSCAN_PERCENT := 1 
 
-# 4. Bypass VINTF and Security Mismatches
+# Use these if the screen is still shifted or weirdly colored
+TW_TARGET_USES_QCOM_BSP := false
+BOARD_HAS_FLIPPED_SCREEN := false
+
+# 4. Storage and Security Bypass
+# Prevents the 'servicemanager' loop seen in your logs
 PRODUCT_ENFORCE_VINTF_MANIFEST := false
 TW_SKIP_COMPATIBILITY_CHECK := true
 PB_DISABLE_DEFAULT_TREBLE_COMP := true
-
-# 5. Mounting and Storage
 BOARD_HAS_LARGE_FILESYSTEM := true
-TW_INCLUDE_LOGICAL := my_product my_engineering my_company my_carrier my_region my_heytap my_stock my_preload my_manifest
