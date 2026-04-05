@@ -38,15 +38,22 @@ jobs:
 
       - name: Clean System and Install Dependencies
         run: |
-          # Manually clear some immediate space just in case
-          sudo docker image prune -a -f
-          sudo apt-get clean
+          # 1. Remove massive pre-installed folders that maximize-build-space might miss
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf /usr/lib/jvm
           
-          # Now run update and install
+          # 2. Clean apt cache and existing lists to free up /var
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+          
+          # 3. Now run update with limited overhead
           sudo apt-get update
           sudo apt-get install -y bc build-essential zip curl libstdc++6 git wget python3 sshpass
           
-          # Repo Tool setup
+          # 4. Repo Tool setup
           mkdir -p ~/bin
           curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
           chmod a+x ~/bin/repo
