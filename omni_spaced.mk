@@ -33,7 +33,7 @@ $(call inherit-product, vendor/pb/config/common.mk)
 PRODUCT_DEVICE := spaced
 PRODUCT_NAME := omni_spaced
 PRODUCT_BRAND := Realme
-PRODUCT_MODEL := Realme 8i
+PRODUCT_MODEL := Realme 8i / Narzo 50
 PRODUCT_MANUFACTURER := Realme
 
 # HACK: Set vendor patch level
