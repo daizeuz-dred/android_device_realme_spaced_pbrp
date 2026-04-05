@@ -21,64 +21,73 @@ jobs:
   PBRP_CI:
     runs-on: ubuntu-latest
     steps:
-       # 1. THE SPACE FIX: This re-partitions the disk to use all available space for your build.
-       - name: Maximize Build Space
-         uses: easimon/maximize-build-space@master
-         with:
-           root-reserve-mb: 2048
-           temp-reserve-mb: 100
-           remove-dotnet: 'true'
-           remove-android: 'true'
-           remove-haskell: 'true'
-           remove-codeql: 'true'
-           remove-docker-images: 'true'
+      # 1. THE SPACE FIX: Must run FIRST to ensure apt-get update has room to breathe
+      - name: Maximize Build Space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 2048
+          temp-reserve-mb: 100
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          remove-codeql: 'true'
+          remove-docker-images: 'true'
 
-       - name: Checkout
-         uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-       - name: Install Dependencies and Repo Tool
-         run: |
-           sudo apt-get update
-           sudo apt-get install -y bc build-essential zip curl libstdc++6 git wget python3 sshpass
-           mkdir -p ~/bin
-           curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
-           chmod a+x ~/bin/repo
-           echo "$HOME/bin" >> $GITHUB_PATH
-           
-       - name: Sync PBRP Source
-         run: |
-           mkdir -p pbrp
-           cd pbrp
-           git config --global user.email "bot@pbrp.co"
-           git config --global user.name "PBRP Bot"
-           
-           # Initialize with --depth=1 and --no-clone-bundle for smallest possible footprint
-           ~/bin/repo init -u https://github.com/PitchBlackRecoveryProject/manifest_pb -b android-12.1 --depth=1
-           
-           # Sync only what is absolutely necessary
-           ~/bin/repo sync -c -j$(nproc --all) --force-sync --no-tags --no-clone-bundle --optimized-fetch --prune
-       - name: Clone Device Tree
-         run: |
-           cd pbrp
-           git clone https://github.com/${{ github.repository }} -b android-12.1 ${{ env.DEVICE_PATH }}
-       - name: Build Recovery
-         run: |
-           cd pbrp
-           source build/envsetup.sh
-           
-           # We lunch first so the build system populates variables
-           lunch omni_${{ env.DEVICE_CODENAME }}-eng
-           
-           # CRITICAL: Now that lunch is done, delete .repo to free up another ~15-20GB
-           rm -rf .repo
-           
-           # Start building
-           mka recoveryimage
-       - name: Upload Artifact
-         if: success()
-         uses: actions/upload-artifact@v4
-         with:
-           name: PBRP-${{ env.DEVICE_CODENAME }}
-           path: |
-             pbrp/out/target/product/${{ env.DEVICE_CODENAME }}/PitchBlack*.zip
-             pbrp/out/target/product/${{ env.DEVICE_CODENAME }}/recovery.img
+      - name: Clean System and Install Dependencies
+        run: |
+          # Manually clear some immediate space just in case
+          sudo docker image prune -a -f
+          sudo apt-get clean
+          
+          # Now run update and install
+          sudo apt-get update
+          sudo apt-get install -y bc build-essential zip curl libstdc++6 git wget python3 sshpass
+          
+          # Repo Tool setup
+          mkdir -p ~/bin
+          curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+          chmod a+x ~/bin/repo
+          echo "$HOME/bin" >> $GITHUB_PATH
+          
+      - name: Sync PBRP Source
+        run: |
+          mkdir -p pbrp
+          cd pbrp
+          git config --global user.email "bot@pbrp.co"
+          git config --global user.name "PBRP Bot"
+          
+          # Initialize with smallest possible footprint
+          ~/bin/repo init -u https://github.com/PitchBlackRecoveryProject/manifest_pb -b android-12.1 --depth=1
+          
+          # Sync only what is absolutely necessary
+          ~/bin/repo sync -c -j$(nproc --all) --force-sync --no-tags --no-clone-bundle --optimized-fetch --prune
+
+      - name: Clone Device Tree
+        run: |
+          cd pbrp
+          git clone https://github.com/${{ github.repository }} -b android-12.1 ${{ env.DEVICE_PATH }}
+
+      - name: Build Recovery
+        run: |
+          cd pbrp
+          source build/envsetup.sh
+          
+          # Lunch first
+          lunch omni_${{ env.DEVICE_CODENAME }}-eng
+          
+          # Deleting .repo frees up ~15-20GB immediately after sync
+          rm -rf .repo
+          
+          mka recoveryimage
+
+      - name: Upload Artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: PBRP-${{ env.DEVICE_CODENAME }}
+          path: |
+            pbrp/out/target/product/${{ env.DEVICE_CODENAME }}/PitchBlack*.zip
+            pbrp/out/target/product/${{ env.DEVICE_CODENAME }}/recovery.img
